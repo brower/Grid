@@ -59,6 +59,7 @@ Author: paboyle <paboyle@ph.ed.ac.uk>
 ////////////////////////////////////////////
 #include <Grid/qcd/action/gauge/WilsonGaugeAction.h>
 #include <Grid/qcd/action/gauge/PlaqPlusRectangleAction.h>
+#include <Grid/qcd/action/gauge/WilsonGaugeActionNonUniform.h>
 
 namespace Grid {
 namespace QCD {
@@ -75,7 +76,6 @@ typedef IwasakiGaugeAction<PeriodicGimplD>         IwasakiGaugeActionD;
 typedef SymanzikGaugeAction<PeriodicGimplR>        SymanzikGaugeActionR;
 typedef SymanzikGaugeAction<PeriodicGimplF>        SymanzikGaugeActionF;
 typedef SymanzikGaugeAction<PeriodicGimplD>        SymanzikGaugeActionD;
-
 
 typedef WilsonGaugeAction<ConjugateGimplR>          ConjugateWilsonGaugeActionR;
 typedef WilsonGaugeAction<ConjugateGimplF>          ConjugateWilsonGaugeActionF;
