@@ -91,17 +91,19 @@ namespace Grid{
     *  P 1/2                            P 1/2
     */    
 
-    template<class GaugeField, class SmearingPolicy> class LeapFrog :
-      public Integrator<GaugeField, SmearingPolicy> {
+    template<class Gimpl, class SmearingPolicy> class LeapFrog :
+      public Integrator<Gimpl, SmearingPolicy> {
     public:
 
-      typedef LeapFrog<GaugeField, SmearingPolicy> Algorithm;
+      INHERIT_GIMPL_TYPES(Gimpl);
+	
+      typedef LeapFrog<Gimpl, SmearingPolicy> Algorithm;
 
       LeapFrog(GridBase* grid, 
 	       IntegratorParameters Par,
 	       ActionSet<GaugeField> & Aset,
 	       SmearingPolicy & Sm):
-	Integrator<GaugeField, SmearingPolicy>(grid,Par,Aset,Sm) {};
+      Integrator<Gimpl, SmearingPolicy>(grid,Par,Aset,Sm) {};
 
 
       void step (GaugeField& U, int level,int _first, int _last){
@@ -138,18 +140,20 @@ namespace Grid{
       }
     };
 
-    template<class GaugeField, class SmearingPolicy> class MinimumNorm2 :
-      public Integrator<GaugeField, SmearingPolicy> {
+    template<class Gimpl, class SmearingPolicy> class MinimumNorm2 :
+      public Integrator<Gimpl, SmearingPolicy> {
     private:
       const RealD lambda = 0.1931833275037836;
 
     public:
 
+      INHERIT_GIMPL_TYPES(Gimpl);
+
       MinimumNorm2(GridBase* grid, 
 		   IntegratorParameters Par,
 		   ActionSet<GaugeField> & Aset,
 		   SmearingPolicy& Sm):
-	Integrator<GaugeField, SmearingPolicy>(grid,Par,Aset,Sm) {};
+    Integrator<Gimpl, SmearingPolicy>(grid,Par,Aset,Sm) {};
 
       void step (GaugeField& U, int level, int _first,int _last){
 
@@ -197,8 +201,8 @@ namespace Grid{
     };
 
 
-    template<class GaugeField, class SmearingPolicy> class ForceGradient :
-      public Integrator<GaugeField, SmearingPolicy> {
+    template<class Gimpl, class SmearingPolicy> class ForceGradient :
+      public Integrator<Gimpl, SmearingPolicy> {
     private:
       const RealD lambda = 1.0/6.0;;
       const RealD chi    = 1.0/72.0;
@@ -206,12 +210,14 @@ namespace Grid{
       const RealD theta  = 0.0;
     public:
 
+      INHERIT_GIMPL_TYPES(Gimpl);
+
       // Looks like dH scales as dt^4. tested wilson/wilson 2 level.
     ForceGradient(GridBase* grid, 
 		  IntegratorParameters Par,
 		  ActionSet<GaugeField> & Aset,
 		  SmearingPolicy &Sm):
-      Integrator<GaugeField, SmearingPolicy>(grid,Par,Aset, Sm) {};
+    Integrator<Gimpl, SmearingPolicy>(grid,Par,Aset, Sm) {};
 
 
       void FG_update_P(GaugeField&U, int level,double fg_dt,double ep){

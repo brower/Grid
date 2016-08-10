@@ -59,7 +59,7 @@ extern int GridCshiftPermuteMap[4][16];
 class LatticeBase
 {
 public:
-    virtual ~LatticeBase(void) = default;
+  //    virtual ~LatticeBase(void) = default;
     GridBase *_grid;
 };
     

@@ -95,8 +95,10 @@ class PlaquetteLogger : public HmcObservable<typename Gimpl::GaugeField> {
     }
     std::ofstream of(file);
 
-    RealD peri_plaq = WilsonLoops<PeriodicGimplR>::avgPlaquette(U);
-    RealD peri_rect = WilsonLoops<PeriodicGimplR>::avgRectangle(U);
+    //    RealD peri_plaq = WilsonLoops<PeriodicGimplR>::avgPlaquette(U);
+    //    RealD peri_rect = WilsonLoops<PeriodicGimplR>::avgRectangle(U);
+    RealD peri_plaq = 0;
+    RealD peri_rect = 0;
 
     RealD impl_plaq = WilsonLoops<Gimpl>::avgPlaquette(U);
     RealD impl_rect = WilsonLoops<Gimpl>::avgRectangle(U);
@@ -192,7 +194,10 @@ class HybridMonteCarlo {
   /////////////////////////////////////////
   HybridMonteCarlo(HMCparameters Pams, IntegratorType &_Int,
                    GridSerialRNG &_sRNG, GridParallelRNG &_pRNG, GaugeField &_U)
-      : Params(Pams), TheIntegrator(_Int), sRNG(_sRNG), pRNG(_pRNG), Ucur(_U) {}
+      : Params(Pams), TheIntegrator(_Int), sRNG(_sRNG), pRNG(_pRNG), Ucur(_U) 
+  {
+    IntegratorType::EnforceLinkBCs(Ucur);
+  }
   ~HybridMonteCarlo(){};
 
   void AddObservable(HmcObservable<GaugeField> *obs) {

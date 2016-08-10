@@ -68,8 +68,10 @@ Author: paboyle <paboyle@ph.ed.ac.uk>
   };
 
     /*! @brief Class for Molecular Dynamics management */   
-    template<class GaugeField, class SmearingPolicy>
-  class Integrator {
+  template<class Gimpl, class SmearingPolicy>
+  class Integrator : public Gimpl{
+  public:
+    INHERIT_GIMPL_TYPES(Gimpl);
 
   protected:
 
@@ -89,15 +91,14 @@ Author: paboyle <paboyle@ph.ed.ac.uk>
       
       // Should match any legal (SU(n)) gauge field
       // Need to use this template to match Ncol to pass to SU<N> class
-      template<int Ncol,class vec> void generate_momenta(Lattice< iVector< iScalar< iMatrix<vec,Ncol> >, Nd> > & P,GridParallelRNG& pRNG){
-      typedef Lattice< iScalar< iScalar< iMatrix<vec,Ncol> > > > GaugeLinkField;
-      GaugeLinkField Pmu(P._grid);
-      Pmu = zero;
-      for(int mu=0;mu<Nd;mu++){
-      	SU<Ncol>::GaussianLieAlgebraMatrix(pRNG, Pmu);
-      	PokeIndex<LorentzIndex>(P, Pmu, mu);
+      void generate_momenta(GaugeField &P,GridParallelRNG& pRNG){
+	GaugeLinkField Pmu(P._grid);
+	Pmu = zero;
+	for(int mu=0;mu<Ndim;mu++){
+	  SU<Nrepresentation>::GaussianLieAlgebraMatrix(pRNG, Pmu);
+	  PokeIndex<LorentzIndex>(P, Pmu, mu);
+	}
       }
-  }
 
 
       //ObserverList observers; // not yet
@@ -113,44 +114,46 @@ Author: paboyle <paboyle@ph.ed.ac.uk>
   }
 
   void update_P(GaugeField &Mom,GaugeField&U, int level,double ep){
-  	// input U actually not used... 
-  	for(int a=0; a<as[level].actions.size(); ++a){
-  		GaugeField force(U._grid);
-  		GaugeField& Us = Smearer.get_U(as[level].actions.at(a)->is_smeared);
-  		as[level].actions.at(a)->deriv(Us,force); // deriv should NOT include Ta
 
-	  	std::cout<< GridLogIntegrator << "Smearing (on/off): "<<as[level].actions.at(a)->is_smeared <<std::endl;
-	  	if (as[level].actions.at(a)->is_smeared) Smearer.smeared_force(force);
-	  	force = Ta(force);
-	  	std::cout<< GridLogIntegrator << "Force average: "<< norm2(force)/(U._grid->gSites()) <<std::endl;
-	  	Mom -= force*ep;
-	  }
-	}
+    // input U actually not used... 
+    for(int a=0; a<as[level].actions.size(); ++a){
+      GaugeField force(U._grid);
+      GaugeField& Us = Smearer.get_U(as[level].actions.at(a)->is_smeared);
+      as[level].actions.at(a)->deriv(Us,force); // deriv should NOT include Ta
 
-	void update_U(GaugeField&U, double ep){
-		update_U(P,U,ep);
+      std::cout<< GridLogIntegrator << "Smearing (on/off): "<<as[level].actions.at(a)->is_smeared <<std::endl;
+      if (as[level].actions.at(a)->is_smeared) Smearer.smeared_force(force);
+      force = Ta(force);
+      std::cout<< GridLogIntegrator << "Force average: "<< norm2(force)/(U._grid->gSites()) <<std::endl;
+      Mom -= force*ep;
+    }
+    Gimpl::EnforceMomentumBCs(Mom);
+  }
 
-		t_U+=ep;
-		int fl = levels-1;
-		std::cout<< GridLogIntegrator <<"   "<<"["<<fl<<"] U " << " dt "<< ep <<" : t_U "<< t_U <<std::endl;
+  void update_U(GaugeField&U, double ep){
+    update_U(P,U,ep);
+    
+    t_U+=ep;
+    int fl = levels-1;
+    std::cout<< GridLogIntegrator <<"   "<<"["<<fl<<"] U " << " dt "<< ep <<" : t_U "<< t_U <<std::endl;
+  }
+  void update_U(GaugeField &Mom, GaugeField&U, double ep){
+    //rewrite exponential to deal automatically  with the lorentz index?
+    //	GaugeLinkField Umu(U._grid);
+    //	GaugeLinkField Pmu(U._grid);
+    for (int mu = 0; mu < Ndim; mu++){
+      auto Umu=PeekIndex<LorentzIndex>(U, mu);
+      auto Pmu=PeekIndex<LorentzIndex>(Mom, mu);
+      Umu = expMat(Pmu, ep, Params.Nexp)*Umu;
+      ProjectOnGroup(Umu);
+      PokeIndex<LorentzIndex>(U, Umu, mu);
+    }
+    Gimpl::EnforceLinkBCs(U);
+    // Update the smeared fields, can be implemented as observer
+    Smearer.set_GaugeField(U);
+  }
 
-	}
-	void update_U(GaugeField &Mom, GaugeField&U, double ep){
-	//rewrite exponential to deal automatically  with the lorentz index?
-	//	GaugeLinkField Umu(U._grid);
-	//	GaugeLinkField Pmu(U._grid);
-		for (int mu = 0; mu < Nd; mu++){
-			auto Umu=PeekIndex<LorentzIndex>(U, mu);
-			auto Pmu=PeekIndex<LorentzIndex>(Mom, mu);
-			Umu = expMat(Pmu, ep, Params.Nexp)*Umu;
-			ProjectOnGroup(Umu);
-			PokeIndex<LorentzIndex>(U, Umu, mu);
-		}
-	// Update the smeared fields, can be implemented as observer
-		Smearer.set_GaugeField(U);
-	}
-
-	virtual void step (GaugeField& U,int level, int first,int last)=0;
+  virtual void step (GaugeField& U,int level, int first,int last)=0;
 
 public:
 
@@ -173,16 +176,17 @@ public:
 
       //Initialization of momenta and actions
 	void refresh(GaugeField& U,GridParallelRNG &pRNG){
-		std::cout<<GridLogIntegrator<< "Integrator refresh\n";
-		generate_momenta(P,pRNG);
-		for(int level=0; level< as.size(); ++level){
-			for(int actionID=0; actionID<as[level].actions.size(); ++actionID){
-	    // get gauge field from the SmearingPolicy and
-	    // based on the boolean is_smeared in actionID
-				GaugeField& Us = Smearer.get_U(as[level].actions.at(actionID)->is_smeared);
-				as[level].actions.at(actionID)->refresh(Us, pRNG);
-			}
-		}
+	  std::cout<<GridLogIntegrator<< "Integrator refresh\n";
+	  generate_momenta(P,pRNG);
+	  Gimpl::EnforceMomentumBCs(P);
+	  for(int level=0; level< as.size(); ++level){
+	    for(int actionID=0; actionID<as[level].actions.size(); ++actionID){
+	      // get gauge field from the SmearingPolicy and
+	      // based on the boolean is_smeared in actionID
+	      GaugeField& Us = Smearer.get_U(as[level].actions.at(actionID)->is_smeared);
+	      as[level].actions.at(actionID)->refresh(Us, pRNG);
+	    }
+	  }
 	}
 
       // Calculate action
@@ -190,7 +194,7 @@ public:
 
 		LatticeComplex Hloc(U._grid);	Hloc = zero;
 	// Momenta
-		for (int mu=0; mu <Nd; mu++){
+		for (int mu=0; mu <Ndim; mu++){
 			auto Pmu = PeekIndex<LorentzIndex>(P, mu);
 			Hloc -= trace(Pmu*Pmu);
 		}
@@ -218,28 +222,28 @@ public:
 	void integrate(GaugeField& U){
 
 	// reset the clocks
-		t_U=0;
-		for(int level=0; level<as.size(); ++level){
-			t_P[level]=0;
-		}	
+	  t_U=0;
+	  for(int level=0; level<as.size(); ++level){
+	    t_P[level]=0;
+	  }	
+	  
+	  for(int step=0; step< Params.MDsteps; ++step){   // MD step
+	    int first_step = (step==0);
+	    int  last_step = (step==Params.MDsteps-1);
+	    this->step(U,0,first_step,last_step);
+	  }
 
-	for(int step=0; step< Params.MDsteps; ++step){   // MD step
-		int first_step = (step==0);
-		int  last_step = (step==Params.MDsteps-1);
-		this->step(U,0,first_step,last_step);
-	}
-
-	// Check the clocks all match on all levels
-	for(int level=0; level<as.size(); ++level){
-	  assert(fabs(t_U - t_P[level])<1.0e-6); // must be the same
-	  std::cout<<GridLogIntegrator<<" times["<<level<<"]= "<<t_P[level]<< " " << t_U <<std::endl;
-	}	
-
+	  // Check the clocks all match on all levels
+	  for(int level=0; level<as.size(); ++level){
+	    assert(fabs(t_U - t_P[level])<1.0e-6); // must be the same
+	    std::cout<<GridLogIntegrator<<" times["<<level<<"]= "<<t_P[level]<< " " << t_U <<std::endl;
+	  }	
+	  
 	// and that we indeed got to the end of the trajectory
-	assert(fabs(t_U-Params.trajL) < 1.0e-6);
-
-
-}
+	  assert(fabs(t_U-Params.trajL) < 1.0e-6);
+	  
+	  
+	}
 };
 
 }

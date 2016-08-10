@@ -606,28 +606,30 @@ Note that in step D setting B ~ X - A and using B in place of A in step E will g
   }
 
   template<typename GaugeField>
-  static void HotConfiguration(GridParallelRNG &pRNG,GaugeField &out){
+  static void HotConfiguration(GridParallelRNG &pRNG,GaugeField &out,int Ndim=Nd){
     typedef typename GaugeField::vector_type vector_type;
     typedef iSUnMatrix<vector_type> vMatrixType;
     typedef Lattice<vMatrixType> LatticeMatrixType;
     
     LatticeMatrixType Umu(out._grid);
-    for(int mu=0;mu<Nd;mu++){
+    for(int mu=0;mu<Ndim;mu++){
       LieRandomize(pRNG,Umu,1.0);
       PokeIndex<LorentzIndex>(out,Umu,mu);
     }
   }
-  static void TepidConfiguration(GridParallelRNG &pRNG,LatticeGaugeField &out){
+  template<typename GaugeField>
+  static void TepidConfiguration(GridParallelRNG &pRNG,GaugeField &out,int Ndim=Nd){
     LatticeMatrix Umu(out._grid);
-    for(int mu=0;mu<Nd;mu++){
+    for(int mu=0;mu<Ndim;mu++){
       LieRandomize(pRNG,Umu,0.01);
       PokeIndex<LorentzIndex>(out,Umu,mu);
     }
   }
-  static void ColdConfiguration(GridParallelRNG &pRNG,LatticeGaugeField &out){
+  template<typename GaugeField>
+  static void ColdConfiguration(GridParallelRNG &pRNG,GaugeField &out,int Ndim=Nd){
     LatticeMatrix Umu(out._grid);
     Umu=1.0;
-    for(int mu=0;mu<Nd;mu++){
+    for(int mu=0;mu<Ndim;mu++){
       PokeIndex<LorentzIndex>(out,Umu,mu);
     }
   }

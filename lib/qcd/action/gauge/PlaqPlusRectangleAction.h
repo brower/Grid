@@ -56,23 +56,23 @@ namespace Grid{
 	RealD plaq = WilsonLoops<Gimpl>::avgPlaquette(U);
 	RealD rect = WilsonLoops<Gimpl>::avgRectangle(U);
 
-	RealD action=c_plaq*(1.0 -plaq)*(Nd*(Nd-1.0))*vol*0.5
-	            +c_rect*(1.0 -rect)*(Nd*(Nd-1.0))*vol;
+	RealD action=c_plaq*(1.0 -plaq)*(Ndim*(Ndim-1.0))*vol*0.5
+	            +c_rect*(1.0 -rect)*(Ndim*(Ndim-1.0))*vol;
 
 	return action;
       };
 
       virtual void deriv(const GaugeField &Umu,GaugeField & dSdU) {
 	//extend Ta to include Lorentz indexes
-	RealD factor_p = c_plaq/RealD(Nc)*0.5;
-	RealD factor_r =   c_rect/RealD(Nc)*0.5;
+	RealD factor_p = c_plaq/RealD(Nrepresentation)*0.5;
+	RealD factor_r =   c_rect/RealD(Nrepresentation)*0.5;
 
 	GridBase *grid = Umu._grid;
 
-	std::vector<GaugeLinkField> U (Nd,grid);
-	std::vector<GaugeLinkField> U2(Nd,grid);
+	std::vector<GaugeLinkField> U (Ndim,grid);
+	std::vector<GaugeLinkField> U2(Ndim,grid);
 
-	for(int mu=0;mu<Nd;mu++){
+	for(int mu=0;mu<Ndim;mu++){
 	  U[mu] = PeekIndex<LorentzIndex>(Umu,mu);
 	  WilsonLoops<Gimpl>::RectStapleDouble(U2[mu],U[mu],mu);
 	}
@@ -80,7 +80,7 @@ namespace Grid{
 	GaugeLinkField dSdU_mu(grid);
 	GaugeLinkField staple(grid);
 
-	for (int mu=0; mu < Nd; mu++){
+	for (int mu=0; mu < Ndim; mu++){
 
 	  // Staple in direction mu
 

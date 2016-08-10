@@ -54,9 +54,19 @@ public:
     // resolution throughout the usage in this file, and rather defeats the
     // purpose of deriving
     // from Gimpl.
+
+#if 0
     plaq = Gimpl::CovShiftBackward(
         U[mu], mu, Gimpl::CovShiftBackward(
                        U[nu], nu, Gimpl::CovShiftForward(U[mu], mu, U[nu])));
+#else
+    // _
+    //|< _|
+    plaq = Gimpl::CovShiftForward(U[mu],mu,
+           Gimpl::CovShiftForward(U[nu],nu,
+           Gimpl::CovShiftBackward(U[mu],mu,
+           Gimpl::CovShiftIdentityBackward(U[nu], nu))));
+#endif
   }
   //////////////////////////////////////////////////
   // trace of directed plaquette oriented in mu,nu plane
@@ -75,7 +85,7 @@ public:
                             const std::vector<GaugeMat> &U) {
     LatticeComplex sitePlaq(U[0]._grid);
     Plaq = zero;
-    for (int mu = 1; mu < Nd; mu++) {
+    for (int mu = 1; mu < Ndim; mu++) {
       for (int nu = 0; nu < mu; nu++) {
         traceDirPlaquette(sitePlaq, U, mu, nu);
         Plaq = Plaq + sitePlaq;
@@ -86,9 +96,9 @@ public:
   // sum over all x,y,z,t and over all planes of plaquette
   //////////////////////////////////////////////////
   static RealD sumPlaquette(const GaugeLorentz &Umu) {
-    std::vector<GaugeMat> U(4, Umu._grid);
+    std::vector<GaugeMat> U(Ndim, Umu._grid);
 
-    for (int mu = 0; mu < Nd; mu++) {
+    for (int mu = 0; mu < Ndim; mu++) {
       U[mu] = PeekIndex<LorentzIndex>(Umu, mu);
     }
 
@@ -106,19 +116,19 @@ public:
   static RealD avgPlaquette(const GaugeLorentz &Umu) {
     RealD sumplaq = sumPlaquette(Umu);
     double vol = Umu._grid->gSites();
-    double faces = (1.0 * Nd * (Nd - 1)) / 2.0;
-    return sumplaq / vol / faces / Nc; // Nd , Nc dependent... FIXME
+    double faces = (1.0 * Ndim * (Ndim - 1)) / 2.0;
+    return sumplaq / vol / faces / Nrepresentation; // Ndim , Nc dependent... FIXME
   }
 
   //////////////////////////////////////////////////
   // average over traced single links
   //////////////////////////////////////////////////
   static RealD linkTrace(const GaugeLorentz &Umu) {
-    std::vector<GaugeMat> U(4, Umu._grid);
+    std::vector<GaugeMat> U(Ndim, Umu._grid);
 
     LatticeComplex Tr(Umu._grid);
     Tr = zero;
-    for (int mu = 0; mu < Nd; mu++) {
+    for (int mu = 0; mu < Ndim; mu++) {
       U[mu] = PeekIndex<LorentzIndex>(Umu, mu);
       Tr = Tr + trace(U[mu]);
     }
@@ -128,7 +138,7 @@ public:
 
     double vol = Umu._grid->gSites();
 
-    return p.real() / vol / 4.0 / 3.0;
+    return p.real() / vol * (1.0/ Ndim / Nrepresentation);
   };
 
   //////////////////////////////////////////////////
@@ -139,8 +149,8 @@ public:
 
     GridBase *grid = Umu._grid;
 
-    std::vector<GaugeMat> U(4, grid);
-    for (int d = 0; d < Nd; d++) {
+    std::vector<GaugeMat> U(Ndim, grid);
+    for (int d = 0; d < Ndim; d++) {
       U[d] = PeekIndex<LorentzIndex>(Umu, d);
     }
     staple = zero;
@@ -182,14 +192,14 @@ public:
 
     GridBase *grid = Umu._grid;
 
-    std::vector<GaugeMat> U(Nd, grid);
-    for (int d = 0; d < Nd; d++) {
+    std::vector<GaugeMat> U(Ndim, grid);
+    for (int d = 0; d < Ndim; d++) {
       U[d] = PeekIndex<LorentzIndex>(Umu, d);
     }
     staple = zero;
     GaugeMat tmp(grid);
 
-    for (int nu = 0; nu < Nd; nu++) {
+    for (int nu = 0; nu < Ndim; nu++) {
 
       if (nu != mu) {
 
@@ -233,8 +243,8 @@ public:
     if (nu != mu) {
       GridBase *grid = Umu._grid;
 
-      std::vector<GaugeMat> U(4, grid);
-      for (int d = 0; d < Nd; d++) {
+      std::vector<GaugeMat> U(Ndim, grid);
+      for (int d = 0; d < Ndim; d++) {
         U[d] = PeekIndex<LorentzIndex>(Umu, d);
       }
 
@@ -247,12 +257,42 @@ public:
       //    __|
       //
 
-      staple += Gimpl::ShiftStaple(
+      staple = Gimpl::ShiftStaple(
           Gimpl::CovShiftForward(
               U[nu], nu,
               Gimpl::CovShiftBackward(
                   U[mu], mu, Gimpl::CovShiftIdentityBackward(U[nu], nu))),
           mu);
+
+
+    }
+  }
+  static void StapleLower(GaugeMat &staple, const GaugeLorentz &Umu, int mu,int nu) {
+
+    staple = zero;
+
+    if (nu != mu) {
+      GridBase *grid = Umu._grid;
+
+      std::vector<GaugeMat> U(Ndim, grid);
+      for (int d = 0; d < Ndim; d++) {
+        U[d] = PeekIndex<LorentzIndex>(Umu, d);
+      }
+
+      // mu
+      // ^
+      // |__>  nu
+
+        //  __
+        // |
+        // |__
+        //
+        //
+        staple = Gimpl::ShiftStaple(
+            Gimpl::CovShiftBackward(U[nu], nu,
+                                    Gimpl::CovShiftBackward(U[mu], mu, U[nu])),
+            mu);
+
     }
   }
 
@@ -282,7 +322,7 @@ public:
                             const std::vector<GaugeMat> &U) {
     LatticeComplex siteRect(U[0]._grid);
     Rect = zero;
-    for (int mu = 1; mu < Nd; mu++) {
+    for (int mu = 1; mu < Ndim; mu++) {
       for (int nu = 0; nu < mu; nu++) {
         traceDirRectangle(siteRect, U, mu, nu);
         Rect = Rect + siteRect;
@@ -294,9 +334,9 @@ public:
   // sum over all x,y,z,t and over all planes of plaquette
   //////////////////////////////////////////////////
   static RealD sumRectangle(const GaugeLorentz &Umu) {
-    std::vector<GaugeMat> U(Nd, Umu._grid);
+    std::vector<GaugeMat> U(Ndim, Umu._grid);
 
-    for (int mu = 0; mu < Nd; mu++) {
+    for (int mu = 0; mu < Ndim; mu++) {
       U[mu] = PeekIndex<LorentzIndex>(Umu, mu);
     }
 
@@ -317,9 +357,9 @@ public:
 
     double vol = Umu._grid->gSites();
 
-    double faces = (1.0 * Nd * (Nd - 1)); // 2 distinct orientations summed
+    double faces = (1.0 * Ndim * (Ndim - 1)); // 2 distinct orientations summed
 
-    return sumrect / vol / faces / Nc; // Nd , Nc dependent... FIXME
+    return sumrect / vol / faces / Nrepresentation; // Ndim , Nc dependent... FIXME
   }
 
   //////////////////////////////////////////////////
@@ -346,7 +386,7 @@ public:
     GaugeMat Staple2x1(grid);
     GaugeMat tmp(grid);
 
-    for (int nu = 0; nu < Nd; nu++) {
+    for (int nu = 0; nu < Ndim; nu++) {
       if (nu != mu) {
 
         // Up staple    ___ ___
@@ -420,14 +460,14 @@ public:
                                     int mu) {
     GridBase *grid = Umu._grid;
 
-    std::vector<GaugeMat> U(Nd, grid);
-    for (int d = 0; d < Nd; d++) {
+    std::vector<GaugeMat> U(Ndim, grid);
+    for (int d = 0; d < Ndim; d++) {
       U[d] = PeekIndex<LorentzIndex>(Umu, d);
     }
 
     Stap = zero;
 
-    for (int nu = 0; nu < Nd; nu++) {
+    for (int nu = 0; nu < Ndim; nu++) {
       if (nu != mu) {
         //           __ ___
         //          |    __ |

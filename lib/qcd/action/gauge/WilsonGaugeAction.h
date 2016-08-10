@@ -55,7 +55,7 @@ namespace Grid{
       virtual RealD S(const GaugeField &U) {
 	RealD plaq = WilsonLoops<Gimpl>::avgPlaquette(U);
 	RealD vol = U._grid->gSites();
-	RealD action=beta*(1.0 -plaq)*(Nd*(Nd-1.0))*vol*0.5;
+	RealD action=beta*(1.0 -plaq)*(Ndim*(Ndim-1.0))*vol*0.5;
 	return action;
       };
 
@@ -63,12 +63,12 @@ namespace Grid{
 	//not optimal implementation FIXME
 	//extend Ta to include Lorentz indexes
 
-	//RealD factor = 0.5*beta/RealD(Nc);
-	RealD factor = 0.5*beta/RealD(Nc);
+	//RealD factor = 0.5*beta/RealD(Nrepresentation);
+	RealD factor = 0.5*beta/RealD(Nrepresentation);
 
 	GaugeLinkField Umu(U._grid);
 	GaugeLinkField dSdU_mu(U._grid);
-	for (int mu=0; mu < Nd; mu++){
+	for (int mu=0; mu < Ndim; mu++){
 
 	  Umu = PeekIndex<LorentzIndex>(U,mu);
 
