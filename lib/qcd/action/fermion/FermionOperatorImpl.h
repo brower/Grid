@@ -109,15 +109,16 @@ namespace Grid {
     ///////
     // Single flavour four spinors with colour index
     ///////
-    template<class S,int Nrepresentation=Nc>
-    class WilsonImpl :  public PeriodicGaugeImpl< GaugeImplTypes< S, Nrepresentation> > { 
+    template<class S,int Nrep=Nc>
+    class WilsonImpl :  public PeriodicGaugeImpl< GaugeImplTypes< S, Nrep> > { 
     public:
 
       const bool LsVectorised=false;
 
-      typedef PeriodicGaugeImpl< GaugeImplTypes< S,Nrepresentation> > Gimpl;
-
+      typedef PeriodicGaugeImpl< GaugeImplTypes< S,Nrep> > Gimpl;
       INHERIT_GIMPL_TYPES(Gimpl);
+
+
 
       template<typename vtype> using iImplSpinor             = iScalar<iVector<iVector<vtype, Nrepresentation>, Ns> >;
       template<typename vtype> using iImplHalfSpinor         = iScalar<iVector<iVector<vtype, Nrepresentation>, Nhs> >;
@@ -192,16 +193,16 @@ PARALLEL_FOR_LOOP
     ///////
     // Single flavour four spinors with colour index, 5d redblack
     ///////
-    template<class S,int Nrepresentation=Nc>
-    class DomainWallVec5dImpl :  public PeriodicGaugeImpl< GaugeImplTypes< S,Nrepresentation> > { 
+    template<class S,int Nrep=Nc>
+    class DomainWallVec5dImpl :  public PeriodicGaugeImpl< GaugeImplTypes< S,Nrep> > { 
     public:
     
       const bool LsVectorised=true;
 
-      typedef PeriodicGaugeImpl< GaugeImplTypes< S,Nrepresentation> > Gimpl;
 
+      typedef PeriodicGaugeImpl< GaugeImplTypes< S,Nrep> > Gimpl;
       INHERIT_GIMPL_TYPES(Gimpl);
-      
+
       template<typename vtype> using iImplSpinor             = iScalar<iVector<iVector<vtype, Nrepresentation>, Ns> >;
       template<typename vtype> using iImplHalfSpinor         = iScalar<iVector<iVector<vtype, Nrepresentation>, Nhs> >;
       template<typename vtype> using iImplDoubledGaugeField  = iVector<iScalar<iMatrix<vtype, Nrepresentation> >, Nds >;
@@ -287,15 +288,16 @@ PARALLEL_FOR_LOOP
     // Flavour doubled spinors; is Gparity the only? what about C*?
     ////////////////////////////////////////////////////////////////////////////////////////
 
-    template<class S,int Nrepresentation>
-    class GparityWilsonImpl : public ConjugateGaugeImpl< GaugeImplTypes<S,Nrepresentation> >{ 
+    template<class S,int Nrep>
+    class GparityWilsonImpl : public ConjugateGaugeImpl< GaugeImplTypes<S,Nrep> >{ 
     public:
 
       const bool LsVectorised=false;
 
-      typedef ConjugateGaugeImpl< GaugeImplTypes<S,Nrepresentation> > Gimpl;
 
+      typedef ConjugateGaugeImpl< GaugeImplTypes<S,Nrep> > Gimpl;
       INHERIT_GIMPL_TYPES(Gimpl);
+
 
       template<typename vtype> using iImplSpinor             = iVector<iVector<iVector<vtype, Nrepresentation>, Ns>, Ngp >;
       template<typename vtype> using iImplHalfSpinor         = iVector<iVector<iVector<vtype, Nrepresentation>, Nhs>, Ngp >;
