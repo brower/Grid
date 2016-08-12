@@ -69,7 +69,10 @@ public:
     const int Ndim=5;
     
     // 5d grid expected
-    UGrid   =  new GridCartesian(GridDefaultLatt(),GridDefaultSimd(Ndim,vComplex::Nsimd()),GridDefaultMpi());
+    std::vector<int> simd = GridDefaultSimd(Ndim-1,vComplex::Nsimd());
+    simd.push_back(1);
+
+    UGrid   =  new GridCartesian(GridDefaultLatt(),simd,GridDefaultMpi());
     int Ntau= UGrid->_fdimensions[Ndim-1];
     assert(UGrid->_ndimension ==Ndim);
 

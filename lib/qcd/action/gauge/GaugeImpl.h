@@ -199,7 +199,7 @@ public:
     GaugeLinkField zz(U._grid); zz=zero;
 
     Utau = PeekIndex<LorentzIndex>(U, Ndim-1);
-    Utau = where(coor==Ntau,zz,Utau);
+    Utau = where(coor==(Ntau-1),zz,Utau);
     PokeIndex<LorentzIndex>(U,Utau,Ndim-1);
   };
   static void EnforceMomentumBCs(GaugeField & P) { 
